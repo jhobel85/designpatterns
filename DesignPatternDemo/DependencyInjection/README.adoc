@@ -1,0 +1,202 @@
+= Compare types of dependency injection
+
+This code demonstrate how we can inject external and internal (logic code) dependency like:
+
+[source, csharp]
+----
+include::Program.cs[tag=injection-common-contract]
+----
+
+==  Injection location
+
+An Injection can be done at several location:
+
+* Constructor
+* Method
+* Event
+* (Generic) Type definition
+
+[source, csharp]
+----
+public delegate void ExternalEventHandler(IExternalInterface sender, object args);
+
+public interface IExternalEventInterface
+{
+    event ExternalEventHandler ExternalEvent;
+}
+
+// injection at type definition (generic type)
+class Foo<TDependency> where TDependency: IExternalEventInterface
+{
+    // injection at constructor
+    Foo(TDependency dependency)
+    {            
+        dependency.ExternalEvent += (s, a) => {
+            // injection at event
+        }
+        ...
+    }
+
+    // injection at method
+    public void Method(IExternalInterface dependency)
+    {
+        ...
+    }
+}
+----
+
+The decision when use which location depends on several factors like e.g.
+
+* Usecase of the logic or dependency 
+* Life-Cycle of the logic or dependency
+
+
+=== Example
+
+[source, csharp]
+----
+// contract
+include::Program.cs[tag=injection-location-contract]
+
+// program
+include::Program.cs[tag=injection-location-program]
+
+// logic
+include::Program.cs[tag=injection-location-logic]
+----
+
+For this example we assume that the `logger` dependency will not change during the life cycle of the logic/program (only for some special use case we want to send our log message to the console). And the `file` dependency can be change quite often during the life cycle of the logic/program.
+
+* `ConstructorOnlyLogic` - for every new file or logger we need to create a new logic instance.
+* `StaticMethodLogic` - is a pure static class/method. Every time we have to pass file and logger objects to logic method. So the caller of the method needs to retrieve theses objects from somewhere, which can be easy for some cases or not so easy in other cases.
+* `ConstructorAndMethodLogic` - because of our assumption, we could bind the logger object to our logic instance. so we can use the same logic instance for several file object. Only when we want to use the Console logger we have to create a new logic instance.
+* `ConstructorAndMethodAndStaticLogic` - similar to `ConstructorAndMethodLogic` we bind the logger to the logic instance, but we also add a static method which allows us to use another logger (e.g. the console logger) for special use cases.
+
+
+**Following examples will work mostly with injection at the constructor.**
+
+
+== Injection by classes/structs/records
+
+=== Example
+
+[source, csharp]
+----
+// program
+include::Program.cs[tag=class-injection-program]
+
+// logic
+include::Program.cs[tag=class-injection-logic]
+----
+
+=== Pro vs. Cons
+
+* Pro
+    - very explicit
+
+* Cons
+    - hard mock and testable
+    - hard coupling
+    - favors code duplicates
+    - favors implementation inheritance (see http://whats-in-a-game.com/implementation-inheritance-is-evil/)
+
+
+== Injection by interfaces
+
+=== Example
+
+[source, csharp]
+----
+// program
+include::Program.cs[tag=interface-injection-program]
+
+// contract
+include::Program.cs[tag=interface-injection-contract]
+
+// logic
+include::Program.cs[tag=interface-injection-logic]
+----
+
+=== Pro vs. Cons
+
+* Pro
+    - loose coupling
+    - easy mock and testable
+
+* Cons
+    - favors boilerplate (see the new interface `IInternalInterface` and dependency type `ChainDependency`)
+    - less flexible (if we change the interface, all implementation have to be updated)
+    - may too loose coupling for internal dependency (because increasing complexity, see https://mechomotive.com/coupling/)
+
+== Injection by actions/functions/delegates
+
+===  Example
+
+[source, csharp]
+----
+// program
+include::Program.cs[tag=pure-action-injection-program]
+
+// logic
+include::Program.cs[tag=pure-action-injection-logic]
+----
+
+=== Pro vs. Cons
+
+* Pro
+    - no (additional) interfaces are required 
+    - easy testable
+    - very flexible
+
+* Cons
+    - for some cases too flexible 
+    - can increase the number of parameter (but mad also indicate, that single-responsibility is not respected)
+    - logic code can "hide" into the wrapping actions
+
+
+== Injection by operations
+
+
+===  Example
+
+[source, csharp]
+----
+// program
+include::Program.cs[tag=operation-injection-program]
+
+// logic
+include::Program.cs[tag=operation-injection-logic]
+----
+
+=== Pro vs. Cons
+
+* Pro
+    - easy testable
+    - flexible
+    - bundle serval action
+    - selected actions can be easily replaced
+
+* Cons
+    - additional class is required 
+    - logic code can "hide" into the wrapping actions
+
+== Recommendation
+
+Use the action or operations injection only for the internal dependency and the interface injection for external injection, like:
+
+[source, csharp]
+----
+// program
+include::Program.cs[tag=action-injection-program]
+
+// logic
+include::Program.cs[tag=action-injection-logic]
+----
+
+so we have:
+
+* less "new" parameter are required
+* is still easy testable
+* is still flexible
+* loose coupling for external dependencies
+* "moderate" coupling for internal dependencies

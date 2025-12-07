@@ -1,0 +1,113 @@
+= Compare Types of Error Handling
+
+== Introduction
+
+Error handling is a crucial aspect of writing robust and reliable applications. 
+Properly managing and responding to errors ensures that the application behaves gracefully and provides a better user experience.
+
+== Exceptions
+
+An exception is an abnormal event that occurs during the execution of a program, disrupting the normal flow of the application.
+
+Types of Exceptions:
+
+- System Exceptions: Raised by the .NET runtime, such as `NullReferenceException`.
+- Application Exceptions: Custom exceptions created by developers to handle specific errors.
+
+[source,csharp]
+----
+throw new Exception("Custom error message");
+----
+
+Catch Exception:
+
+[source,csharp]
+----
+try
+{
+  // Code that might throw an exception
+}
+catch (ExceptionType1 ex1)
+{
+  // Handle ExceptionType1
+}
+catch (ExceptionType2 ex2)
+{
+  // Handle ExceptionType2
+}
+finally
+{
+  // Code that executes regardless of whether an exception occurred or not
+}
+----
+
+=== Exception Context
+
+To create a custom exception context for each Business Logic (BL), developers can define a custom exception class for the BL.
+
+Each BL should catch all inner exceptions and rethrow them as the custom BL exception to provide a more context-specific error handling mechanism.
+
+[source,csharp]
+----
+// contract
+include::Program.cs[tag=exception-contract]
+
+// program
+include::Program.cs[tag=exception-program]
+
+// logic
+include::Program.cs[tag=exception-logic]
+----
+
+=== Pros and Cons
+
+Here are some considerations for using exception handling and exception context:
+
+Pros:
+
+- **Clarity:** Exception handling provides a clear and structured way to deal with errors.
+- **Customization:** Creating custom exceptions allows developers to tailor error handling to specific application needs.
+
+Cons:
+
+- **Performance Overhead:** Using exceptions for control flow can introduce performance overhead.
+- **Complexity:** Handling exceptions in a complex system might lead to code that is harder to understand and maintain.
+
+
+== ReturnValue / Result Object
+
+In addition to traditional exception handling, an alternative approach is to use a ReturnValue or Result Object to expose errors.
+This concept is similar to Rust's https://doc.rust-lang.org/std/result/[`std::result`], where the result type can represent either a successful value or an error.
+The `Result` type allows for more explicit and fine-grained control over error handling.
+In C#, we can implement a similar pattern using a custom `Result` struct like:
+
+[source,csharp]
+----
+// contract
+include::Program.cs[tag=result-contract]
+
+// program
+include::Program.cs[tag=result-program]
+
+// logic
+include::Program.cs[tag=result-logic]
+----
+
+This `Result` struct is a generic type that can hold either a successful value (`Value`) or an error message (`ErrorMessage`). The `BusinessLogicWithResult` class uses this `Result` type to represent the result of a division operation.
+
+Additional methods like `AndThen`, `IsOk`, `IsFail`, `Match`, and `OrElse` provide more control and flexibility in handling and chaining results. 
+They allow for actions to be taken based on the success or failure of the result, enabling developers to build more expressive and concise error-handling logic.
+
+=== Pros and Cons
+
+Using a Result Object in C# has its own set of advantages and disadvantages:
+
+Pros:
+
+- **Explicit Error Handling:** Result objects make error handling more explicit and force developers to handle errors explicitly.
+- **Fine-Grained Control:** Developers have fine-grained control over success and failure scenarios, allowing for specific error messages and additional information.
+
+Cons:
+
+- **Boilerplate Code:** Implementing result objects can introduce additional boilerplate code.
+- **Complexity:** For simple scenarios, using exceptions might be more straightforward than managing result objects.

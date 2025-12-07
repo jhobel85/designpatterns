@@ -1,0 +1,7 @@
+= DesignePatternDemo
+
+This repo contains some example for several design pattern.
+
+include::DependencyInjection/README.adoc[]
+
+include::ErrorHandling/README.adoc[]
